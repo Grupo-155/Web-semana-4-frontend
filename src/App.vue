@@ -16,29 +16,30 @@
       <v-toolbar-title>Application</v-toolbar-title>
     </v-app-bar>
 
-    <v-navigation-drawer v-model="drawer" class="deep-purple accent-4" fixed dark temporary>
-      <v-card class="mx-auto" height="100%" width="256">
-        <v-navigation-drawer v-model="drawer" class="deep-purple accent-4" dark temporary> 
+    <v-navigation-drawer v-model="drawer" class="" fixed dark temporary>
+      <v-card class="mx-auto deep-purple accent-4" height="100%" width="256">
+        <!-- <v-navigation-drawer v-model="drawer" class="deep-purple accent-4" dark temporary>  -->
           <v-list>
             <!-- v-for="(item, index) in items" :key="index" -->
-            <v-list-item v-for="(item, index) in items" :key="index" link>
-              <router-link>
-                <v-list-item-icon @click.prevent="menuRoute(index)">
-                  <v-icon>{{ item.icon }}</v-icon>
-                </v-list-item-icon>
-              </router-link>
-              <v-list-item-content @click.prevent="menuRoute(index)">
+            <v-list-item v-for="(item, index) in items" :key="index" link :to="{name: item.ruta}" exact>
+              
+              <v-list-item-icon>
+                <v-icon>{{ item.icon }}</v-icon>
+              </v-list-item-icon>
+            
+              <v-list-item-content>
                 <v-list-item-title >{{ item.title}} {{index}} </v-list-item-title>
               </v-list-item-content>
             </v-list-item>
+            
           </v-list>
-
-          <template v-slot:append>
+          
             <div class="pa-2">
               <v-btn block> Logout </v-btn>
             </div>
-          </template>
-        </v-navigation-drawer>
+          
+          
+        <!-- </v-navigation-drawer> -->
       </v-card>
     </v-navigation-drawer>
 
@@ -63,25 +64,25 @@ export default {
   data: () => ({
     drawer: null,
     items: [
-      { title: "Inicio", icon: "mdi-home" },
-      { title: "Categorias", icon: "mdi-notification-clear-all" },
-      { title: "Articulos", icon: "mdi-shopping" },
-      { title: "Usuarios", icon: "mdi-account-box" },
+      { title: "Inicio", icon: "mdi-home", ruta: 'Home' },
+      { title: "Categorias", icon: "mdi-notification-clear-all", ruta:'Categoria' },
+      { title: "Articulos", icon: "mdi-shopping", ruta: 'Articulo'},
+      { title: "Usuarios", icon: "mdi-account-box", ruta: 'Usuario'},
     ],
     links: ["Categorias", "Articulos", "Usuarios"],
     mini: true,
   }),
   methods: {
 
-    menuRoute(index) {
-      if (index == 0) {
-        this.$router.push("/")
-      }
-      if(index == 1){
-        this.$router.push("/categoria");  
-      }
+    // menuRoute(index) {
+    //   if (index == 0) {
+    //     this.$router.push("/")
+    //   }
+    //   if(index == 1){
+    //     this.$router.push("/categoria");  
+    //   }
       
-    }
+    // }
   }
 }
 </script>
