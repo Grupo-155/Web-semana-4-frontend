@@ -1,5 +1,6 @@
 <template>
     <table-categoria></table-categoria>
+    
 </template>
 
 <script>

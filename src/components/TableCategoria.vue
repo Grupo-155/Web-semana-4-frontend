@@ -1,15 +1,18 @@
 <template>
     <v-data-table
     :headers="headers"
-    :items="desserts"
-    sort-by="calories"
+    :items="categorias"
+    sort-by="nombre"
     class="elevation-1"
+    :loading="cargando"
+    loading-text="Cargando... Por favor espere"
   >
     <template v-slot:top>
       <v-toolbar
         flat
       >
-        <v-toolbar-title>Application</v-toolbar-title>
+        <v-toolbar-title>Categoria</v-toolbar-title>
+        
         <v-divider
           class="mx-4"
           inset
@@ -28,7 +31,7 @@
               v-bind="attrs"
               v-on="on"
             >
-              New Item
+              Agregar Categoria
             </v-btn>
           </template>
           <v-card>
@@ -45,50 +48,25 @@
                     md="4"
                   >
                     <v-text-field
-                      v-model="editedItem.name"
-                      label="Dessert name"
+                      v-model="editedItem.nombre"
+                      label="Nombre"
                     ></v-text-field>
                   </v-col>
                   <v-col
                     cols="12"
                     sm="6"
-                    md="4"
+                    md="8"
                   >
-                    <v-text-field
-                      v-model="editedItem.calories"
-                      label="Calories"
-                    ></v-text-field>
+                    <v-textarea
+                      v-model="editedItem.descripcion"
+                      label="Descripcion"
+                      counter="254"
+                      no-resize
+                      auto-grow
+                    ></v-textarea>
                   </v-col>
-                  <v-col
-                    cols="12"
-                    sm="6"
-                    md="4"
-                  >
-                    <v-text-field
-                      v-model="editedItem.fat"
-                      label="Fat (g)"
-                    ></v-text-field>
-                  </v-col>
-                  <v-col
-                    cols="12"
-                    sm="6"
-                    md="4"
-                  >
-                    <v-text-field
-                      v-model="editedItem.carbs"
-                      label="Carbs (g)"
-                    ></v-text-field>
-                  </v-col>
-                  <v-col
-                    cols="12"
-                    sm="6"
-                    md="4"
-                  >
-                    <v-text-field
-                      v-model="editedItem.protein"
-                      label="Protein (g)"
-                    ></v-text-field>
-                  </v-col>
+                  
+                 
                 </v-row>
               </v-container>
             </v-card-text>
@@ -100,31 +78,33 @@
                 text
                 @click="close"
               >
-                Cancel
+                Cancelar
               </v-btn>
               <v-btn
                 color="blue darken-1"
                 text
                 @click="save"
               >
-                Save
+                Guardar
               </v-btn>
             </v-card-actions>
           </v-card>
         </v-dialog>
-        <v-dialog v-model="dialogDelete" max-width="500px">
+        <v-dialog v-model="dialogDelete" max-width="600px">
           <v-card>
-            <v-card-title class="headline">Are you sure you want to delete this item?</v-card-title>
+            <v-card-title class="headline">Está seguro que desea deshabilitar esta categoría?</v-card-title>
             <v-card-actions>
               <v-spacer></v-spacer>
-              <v-btn color="blue darken-1" text @click="closeDelete">Cancel</v-btn>
-              <v-btn color="blue darken-1" text @click="deleteItemConfirm">OK</v-btn>
+              <v-btn color="blue darken-1" text @click="closeDelete">Cancelar</v-btn>
+              <v-btn color="blue darken-1" text @click="deleteItemConfirm">Aceptar</v-btn>
               <v-spacer></v-spacer>
             </v-card-actions>
           </v-card>
         </v-dialog>
       </v-toolbar>
+      <!-- <pre>{{$data.categorias}}</pre> -->
     </template>
+    
     <template v-slot:item.actions="{ item }">
       <v-icon
         small
@@ -148,49 +128,48 @@
         Reset
       </v-btn>
     </template>
+    
   </v-data-table>
+  
 </template>
 
 <script>
+import axios from 'axios';
 export default {
     data: () => ({
       titulo: ["Articulos","Categorias","Usuarios"],
       dialog: false,
       dialogDelete: false,
+      cargando: true,
       headers: [
         {
-          text: 'Dessert (100g serving)',
+          text: 'Nombre',
           align: 'start',
-          sortable: false,
-          value: 'name',
+          sortable: true,
+          value: 'nombre',
         },
-        { text: 'Calories', value: 'calories' },
-        { text: 'Fat (g)', value: 'fat' },
-        { text: 'Carbs (g)', value: 'carbs' },
-        { text: 'Protein (g)', value: 'protein' },
+        { text: 'Descripcion', value: 'descripcion' },
+        { text: 'Estado', value: 'estado' },
+        
         { text: 'Actions', value: 'actions', sortable: false },
       ],
       desserts: [],
+      categorias:[],
       editedIndex: -1,
       editedItem: {
-        name: '',
-        calories: 0,
-        fat: 0,
-        carbs: 0,
-        protein: 0,
+        nombre: '',
+        descripcion:''
       },
       defaultItem: {
-        name: '',
-        calories: 0,
-        fat: 0,
-        carbs: 0,
-        protein: 0,
+        nombre: '',
+        descripcion: '',
+        
       },
     }),
 
     computed: {
       formTitle () {
-        return this.editedIndex === -1 ? 'New Item' : 'Edit Item'
+        return this.editedIndex === -1 ? 'Agregar Categoria' : 'Editar Categoria'
       },
     },
 
@@ -204,7 +183,8 @@ export default {
     },
 
     created () {
-      this.initialize()
+      this.initialize();
+      this.list();
     },
 
     methods: {
@@ -219,21 +199,31 @@ export default {
           }
         ]
       },
+      list(){
+        axios.get('http://localhost:3000/api/categoria/list')
+        .then(
+          response => {
+            this.categorias = response.data;
+            this.cargando = false;
+          }
+        )
+        .catch(error => {return error})
+      },
 
       editItem (item) {
-        this.editedIndex = this.desserts.indexOf(item)
+        this.editedIndex = item.id;//this.categorias.indexOf(item)
         this.editedItem = Object.assign({}, item)
         this.dialog = true
       },
 
       deleteItem (item) {
-        this.editedIndex = this.desserts.indexOf(item)
+        this.editedIndex = item.id;//this.categorias.indexOf(item)
         this.editedItem = Object.assign({}, item)
         this.dialogDelete = true
       },
 
       deleteItemConfirm () {
-        this.desserts.splice(this.editedIndex, 1)
+        this.categorias.splice(this.editedIndex, 1)
         this.closeDelete()
       },
 
@@ -255,9 +245,38 @@ export default {
 
       save () {
         if (this.editedIndex > -1) {
-          Object.assign(this.desserts[this.editedIndex], this.editedItem)
+
+          //editar objeto
+          axios.put('http://localhost:3000/api/categoria/update', {
+            id: this.editedItem.id,
+            nombre: this.editedItem.nombre,
+            descripcion: this.editedItem.descripcion 
+            })
+          .then(response=>{
+            console.log(response);
+            this.list();
+          })
+          .catch(error =>{
+            console.log(error)
+            return error;
+          })
+          // Object.assign(this.desserts[this.editedIndex], this.editedItem)
         } else {
-          this.desserts.push(this.editedItem)
+          //agregar un objeto
+          axios.post('http://localhost:3000/api/categoria/add',{
+            nombre:this.editedItem.nombre,
+            descripcion:this.editedItem.descripcion,
+            estado: 1
+            })
+          .then(response=>{
+            console.log(response);
+            this.list();
+          })
+          .catch(error =>{
+            console.log(error)
+            return error;
+          })
+          //this.desserts.push(this.editedItem)
         }
         this.close()
       },
