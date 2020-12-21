@@ -1,14 +1,14 @@
 <template>
-    <table-categoria></table-categoria>
-    
+    <table-data ruta="categoria"></table-data>
 </template>
 
 <script>
-import TableCategoria from '../components/TableCategoria';
+import TableData from '../components/TableData';
 export default {
     components:{
-        TableCategoria
-    }
+        TableData
+    },
+    
 }
 </script>
 

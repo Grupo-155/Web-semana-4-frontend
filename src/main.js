@@ -7,12 +7,12 @@ import axios from 'axios';
 
 
 
-// const base = axios.create({
-//   //baseURL:'http://localhost:3000'
-//   baseURL:'http://localhost:3000/'
-// });
+const base = axios.create({
+  //baseURL:'http://localhost:3000'
+  baseURL:'http://localhost:3000'
+});
 
-// Vue.prototype.$http = base;
+Vue.prototype.$http = base;
 
 Vue.config.productionTip = false;
 
