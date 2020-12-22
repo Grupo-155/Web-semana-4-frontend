@@ -1,6 +1,7 @@
+<!--CREAR LA PASSWORD EN USUARIO-->
 <template>
   <v-data-table
-    :headers="headers"
+    :headers="headersInfo"
     :items="informacion"
     sort-by="nombre"
     class="elevation-1"
@@ -72,6 +73,25 @@
                     ></v-text-field>
                   </v-col>
                   <v-col cols="12" sm="6" md="4" v-if="ruta == 'articulo'">
+                    <v-select 
+                      v-model="categoriaSelect"
+                      :items="categorias"
+                      item-text="nombre"
+                      item-value="id"
+                      return-object
+                      menu-props="auto"
+                      label="Categorias"
+                      hide-details
+                      single-line
+                    ></v-select>
+                  </v-col>
+                  <!-- <v-col cols="12" sm="6" md="4" v-if="ruta == 'articulo'">
+                    <v-text-field
+                      v-model="editedArticleItem.categoria.nombre"
+                      label="Categoria"
+                    ></v-text-field>
+                  </v-col> -->
+                  <v-col cols="12" sm="6" md="4" v-if="ruta == 'articulo'">
                     <v-text-field
                       v-model="editedArticleItem.precio_venta"
                       label="Precio de venta"
@@ -100,6 +120,12 @@
                     <v-text-field
                       v-model="editedUserItem.email"
                       label="Email"
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="12" sm="6" md="4" v-if="ruta == 'usuario'">
+                    <v-text-field
+                      v-model="editedUserItem.password"
+                      label="Password"
                     ></v-text-field>
                   </v-col>
                   <v-col cols="12" sm="6" md="4" v-if="ruta == 'usuario'">
@@ -157,7 +183,7 @@
 
     <template v-slot:item.actions="{ item }">
       <v-icon small class="mr-2" @click="editItem(item)"> mdi-pencil </v-icon>
-      <v-icon small @click="deleteItem(item)"> mdi-delete </v-icon>
+      <v-icon small @click="deleteItem(item)"> {{ iconShow }} </v-icon>
     </template>
     <template v-slot:no-data>
       <v-btn color="primary" @click="initialize"> Reset </v-btn>
@@ -174,8 +200,10 @@ export default {
     dialog: false,
     dialogDelete: false,
     cargando: true,
-
-    headers: [
+    iconShow: "mdi-eye",
+    //toggleIcon: "mdi-eye",
+    headers:[],
+    headersCategoria: [
       {
         text: "Nombre",
         align: "start",
@@ -183,14 +211,46 @@ export default {
         value: "nombre",
       },
       { text: "Descripcion", value: "descripcion" },
-
       { text: "Estado", value: "estado" },
-
       { text: "Actions", value: "actions", sortable: false },
     ],
-    desserts: [],
+    headersArticulo:[
+      {
+        text: "Nombre",
+        align: "start",
+        sortable: true,
+        value: "nombre",
+      },
+      {text: "Descripcion", value: "descripcion" },
+      {text: "Codigo", value: "codigo"},
+      {text: "Categoria", value: "categoria.nombre"},
+      {text: "Precio de Venta", value: "precio_venta"},
+      {text:"Stock", value: "stock"},
+      {text: "Estado", value: "estado" },
+      {text: "Actions", value: "actions", sortable: false },
+    ],
+    headersUsuario:[
+      {
+        text: "Nombre",
+        align: "start",
+        sortable: true,
+        value: "nombre",
+      },
+      {text: "Rol", value: "rol" },
+      {text: "Tipo de documento", value: "tipo_documento"},
+      {text: "Numero de documento", value: "num_documento"},
+      {text:"Direccion", value: "direccion"},
+      {text:"Telefono", value: "telefono"},
+      {text: "Estado", value: "estado" },
+      {text: "Actions", value: "actions", sortable: false }
+      
+    ],
+
     informacion: [],
+    categorias:[],
+    categoriaSelect:'',
     editedIndex: -1,
+    
     editedItem: {
       nombre: "",
       descripcion: "",
@@ -201,10 +261,12 @@ export default {
     },
     //prueba
     editedCategoryItem: {
+      id: Number,
       nombre: "",
       descripcion: "",
     },
     defaultCategoryItem: {
+      id:Number,
       nombre: "",
       descripcion: "",
     },
@@ -212,6 +274,7 @@ export default {
       nombre: "",
       descripcion: "",
       codigo: "",
+      categoria: {id:0,nombre:""},
       precio_venta: null,
       stock: null,
     },
@@ -219,6 +282,7 @@ export default {
       nombre: "",
       descripcion: "",
       codigo: "",
+      categoria: {id:0,nombre:""},
       precio_venta: null,
       stock: null,
     },
@@ -226,6 +290,7 @@ export default {
       nombre: "",
       rol: "",
       email: "",
+      password: "",
       tipo_documento: "",
       num_documento: "",
       direccion: "",
@@ -235,6 +300,7 @@ export default {
       nombre: "",
       rol: "",
       email: "",
+      password: "",
       tipo_documento: "",
       num_documento: "",
       direccion: "",
@@ -254,6 +320,16 @@ export default {
         return "esta";
       }
     },
+    headersInfo(){
+      if (this.ruta === "usuario") {
+        return this.headersUsuario;
+      } else if (this.ruta == "categoria") {
+        return this.headersCategoria;
+      }else{
+        return this.headersArticulo;
+      }
+    }
+    
   },
 
   watch: {
@@ -262,12 +338,13 @@ export default {
     },
     dialogDelete(val) {
       val || this.closeDelete();
-    },
+    }
   },
 
   created() {
-    this.initialize();
+    
     this.list(this.ruta);
+    this.listCategorias()
   },
 
   methods: {
@@ -283,10 +360,19 @@ export default {
       ];
     },
     list(endpoint) {
-      axios
-        .get(`http://localhost:3000/api/${endpoint}/list`)
+      axios.get(`http://localhost:3000/api/${endpoint}/list`)
         .then((response) => {
           this.informacion = response.data; //ruta obtiene el nombre categoria, ussuario o articulo
+          this.cargando = false;
+        })
+        .catch((error) => {
+          return error;
+        });
+    },
+    listCategorias(){
+      axios.get(`http://localhost:3000/api/categoria/list`)
+        .then((response) => {
+          this.categorias = response.data; //ruta obtiene el nombre categoria, ussuario o articulo
           this.cargando = false;
         })
         .catch((error) => {
@@ -299,12 +385,15 @@ export default {
       if (this.ruta == "categoria") {
         this.editedCategoryItem = Object.assign({}, item);
       } else if (this.ruta == "articulo") {
+        this.categoriaSelect = item ? item.categoriaId : '';
+        console.log(this.categoriaSelect)   
         this.editedArticleItem = Object.assign({}, item);
       } else {
         this.editedUserItem = Object.assign({}, item);
       }
 
       this.dialog = true;
+      
     },
 
     deleteItem(item) {
@@ -317,10 +406,138 @@ export default {
         this.editedUserItem = Object.assign({}, item);
       }
       this.dialogDelete = true;
+      if(this.iconShow == 'mdi-eye'){
+        this.iconShow = "mdi-eye-off";
+      }else{
+        this.iconShow = "mdi-eye"
+      }
     },
 
     deleteItemConfirm() {
-      this.informacion.splice(this.editedIndex, 1);
+      
+      if (this.ruta == "categoria") {
+        if (this.editedCategoryItem.estado === 1) {
+          axios.put(`http://localhost:3000/api/${this.ruta}/deactivate`, {
+              id: this.editedCategoryItem.id,
+            })
+            .then((response) => {
+              console.log(response);
+              this.list(this.ruta);
+              
+            })
+            .catch((error) => {
+              console.log(error);
+              return error;
+            });
+        } else {
+          axios.put(`http://localhost:3000/api/${this.ruta}/activate`, {
+              id: this.editedCategoryItem.id,
+            })
+            .then((response) => {
+              console.log(response);
+              this.list(this.ruta);
+            })
+            .catch((error) => {
+              console.log(error);
+              return error;
+            });
+        }
+      } else if (this.ruta == "articulo") {
+        if (this.editedArticleItem.estado === 1) {
+          axios.put(`http://localhost:3000/api/${this.ruta}/deactivate`, {
+              id: this.editedArticleItem.id,
+            })
+            .then((response) => {
+              console.log(response);
+              this.list(this.ruta);
+            })
+            .catch((error) => {
+              console.log(error);
+              return error;
+            });
+        } else {
+          axios.put(`http://localhost:3000/api/${this.ruta}/activate`, {
+              id: this.editedArticleItem.id,
+            })
+            .then((response) => {
+              console.log(response);
+              this.list(this.ruta);
+            })
+            .catch((error) => {
+              console.log(error);
+              return error;
+            });
+        }
+      } else {
+        if (this.editedUserItem.estado === 1) {
+          axios.put(`http://localhost:3000/api/${this.ruta}/deactivate`, {
+              id: this.editedUserItem.id,
+            })
+            .then((response) => {
+              console.log(response);
+              this.list(this.ruta);
+              
+            })
+            .catch((error) => {
+              console.log(error);
+              return error;
+            });
+        } else {
+          axios.put(`http://localhost:3000/api/${this.ruta}/activate`, {
+              id: this.editedUserItem.id,
+            })
+            .then((response) => {
+              console.log(response);
+              this.list(this.ruta);
+            })
+            .catch((error) => {
+              console.log(error);
+              return error;
+            });
+        }
+      }
+      if (this.editedIndex > -1) {
+        // Object.assign(this.desserts[this.editedIndex], this.editedItem)
+      } else {
+        //agregar un objeto
+
+        if (this.ruta == "categoria") {
+          objetoEditado.id = this.editedCategoryItem.id;
+          objetoEditado.nombre = this.editedCategoryItem.nombre;
+          objetoEditado.descripcion = this.editedCategoryItem.descripcion;
+        } else if (this.ruta == "articulo") {
+          objetoEditado.id = this.editedArticleItem.id;
+          objetoEditado.nombre = this.editedArticleItem.nombre;
+          objetoEditado.descripcion = this.editedArticleItem.descripcion;
+          objetoEditado.categoria = this.this.categoriaSelect.id;
+          //objetoEditado.categoriaId = this.categoriaSelect.id;
+          objetoEditado.codigo = this.editedArticleItem.codigo;
+          objetoEditado.precio_venta = this.editedArticleItem.precio_venta;
+          objetoEditado.stock = this.editedArticleItem.stock;
+        } else {
+          objetoEditado.id = this.editedUserItem.id;
+          objetoEditado.nombre = this.editedUserItem.nombre;
+          objetoEditado.rol = this.editedUserItem.rol;
+          objetoEditado.email = this.editedUserItem.email;
+          objetoEditado.password = this.editedUserItem.password;
+          objetoEditado.tipo_documento = this.editedUserItem.tipo_documento;
+          objetoEditado.num_documento = this.editedUserItem.num_documento;
+          objetoEditado.direccion = this.editedUserItem.direccion;
+          objetoEditado.telefono = this.editedUserItem.telefono;
+        }
+        //añadir objeto
+        axios.post(`http://localhost:3000/api/${this.ruta}/add`, objetoEditado) //añadir los objetos con los if
+          .then((response) => {
+            console.log(response);
+            this.list(this.ruta);
+            objetoEditado = new Object();
+          })
+          .catch((error) => {
+            console.log(error);
+            return error;
+          });
+        //this.desserts.push(this.editedItem)
+      }
       this.closeDelete();
     },
 
@@ -332,6 +549,7 @@ export default {
           this.editedCategoryItem = Object.assign({}, this.defaultCategoryItem);
         } else if (this.ruta == "articulo") {
           this.editedArticleItem = Object.assign({}, this.defaultArticleItem);
+          this.categoriaSelect = '';
         } else {
           this.editedUserItem = Object.assign({}, this.defaultUserItem);
         }
@@ -355,30 +573,32 @@ export default {
 
     save() {
       const objetoEditado = new Object();
-      if (this.ruta == 'categoria') {
-          objetoEditado.id = this.editedCategoryItem.id;
-          objetoEditado.nombre = this.editedCategoryItem.nombre;
-          objetoEditado.descripcion = this.editedCategoryItem.descripcion;
-        } else if(this.ruta == 'articulo') {
-          objetoEditado.id = this.editedArticleItem.id;
-          objetoEditado.nombre = this.editedArticleItem.nombre;
-          objetoEditado.descripcion = this.editedArticleItem.descripcion;
-          objetoEditado.codigo = this.editedArticleItem.codigo;
-          objetoEditado.precio_venta = this.editedArticleItem.precio_venta;
-          objetoEditado.stock = this.editedArticleItem.stock;
-        }else{
-          objetoEditado.id= this.editedUserItem.id;
-          objetoEditado.nombre= this.editedUserItem.nombre;
-          objetoEditado.rol= this.editedUserItem.rol;
-          objetoEditado.email= this.editedUserItem.email;
-          objetoEditado.tipo_documento= this.editedUserItem.tipo_documento;
-          objetoEditado.num_documento= this.editedUserItem.num_documento;
-          objetoEditado.direccion= this.editedUserItem.direccion;
-          objetoEditado.telefono= this.editedUserItem.telefono;
-        }
+      if (this.ruta == "categoria") {
+        objetoEditado.id = this.editedCategoryItem.id;
+        objetoEditado.nombre = this.editedCategoryItem.nombre;
+        objetoEditado.descripcion = this.editedCategoryItem.descripcion;
+      } else if (this.ruta == "articulo") {
+        objetoEditado.id = this.editedArticleItem.id;
+        objetoEditado.nombre = this.editedArticleItem.nombre;
+        objetoEditado.descripcion = this.editedArticleItem.descripcion;
+        objetoEditado.codigo = this.editedArticleItem.codigo;
+        objetoEditado.categoria = this.categoriaSelect.id;
+        //objetoEditado.categoriaId = this.categoriaSelect.id;
+        objetoEditado.precio_venta = this.editedArticleItem.precio_venta;
+        objetoEditado.stock = this.editedArticleItem.stock;
+      } else {
+        objetoEditado.id = this.editedUserItem.id;
+        objetoEditado.nombre = this.editedUserItem.nombre;
+        objetoEditado.rol = this.editedUserItem.rol;
+        objetoEditado.email = this.editedUserItem.email;
+        objetoEditado.password = this.editedUserItem.password;
+        objetoEditado.tipo_documento = this.editedUserItem.tipo_documento;
+        objetoEditado.num_documento = this.editedUserItem.num_documento;
+        objetoEditado.direccion = this.editedUserItem.direccion;
+        objetoEditado.telefono = this.editedUserItem.telefono;
+      }
       if (this.editedIndex > -1) {
-        
-          axios.put(`http://localhost:3000/api/${this.ruta}/update`, objetoEditado)
+        axios.put(`http://localhost:3000/api/${this.ruta}/update`, objetoEditado)
           .then((response) => {
             console.log(response);
             this.list(this.ruta);
@@ -388,34 +608,37 @@ export default {
             console.log(error);
             return error;
           });
-        
+
         // Object.assign(this.desserts[this.editedIndex], this.editedItem)
       } else {
         //agregar un objeto
-        
-        if (this.ruta == 'categoria') {
+
+        if (this.ruta == "categoria") {
           objetoEditado.id = this.editedCategoryItem.id;
           objetoEditado.nombre = this.editedCategoryItem.nombre;
           objetoEditado.descripcion = this.editedCategoryItem.descripcion;
-        } else if(this.ruta == 'articulo') {
+        } else if (this.ruta == "articulo") {
           objetoEditado.id = this.editedArticleItem.id;
           objetoEditado.nombre = this.editedArticleItem.nombre;
           objetoEditado.descripcion = this.editedArticleItem.descripcion;
           objetoEditado.codigo = this.editedArticleItem.codigo;
+          objetoEditado.categoria = this.this.categoriaSelect.id;
+          //objetoEditado.categoriaId = this.categoriaSelect.id;
           objetoEditado.precio_venta = this.editedArticleItem.precio_venta;
           objetoEditado.stock = this.editedArticleItem.stock;
-        }else{
-          objetoEditado.id= this.editedUserItem.id;
-          objetoEditado.nombre= this.editedUserItem.nombre;
-          objetoEditado.rol= this.editedUserItem.rol;
-          objetoEditado.email= this.editedUserItem.email;
-          objetoEditado.tipo_documento= this.editedUserItem.tipo_documento;
-          objetoEditado.num_documento= this.editedUserItem.num_documento;
-          objetoEditado.direccion= this.editedUserItem.direccion;
-          objetoEditado.telefono= this.editedUserItem.telefono;
+        } else {
+          objetoEditado.id = this.editedUserItem.id;
+          objetoEditado.nombre = this.editedUserItem.nombre;
+          objetoEditado.rol = this.editedUserItem.rol;
+          objetoEditado.email = this.editedUserItem.email;
+          objetoEditado.password = this.editedUserItem.password;
+          objetoEditado.tipo_documento = this.editedUserItem.tipo_documento;
+          objetoEditado.num_documento = this.editedUserItem.num_documento;
+          objetoEditado.direccion = this.editedUserItem.direccion;
+          objetoEditado.telefono = this.editedUserItem.telefono;
         }
         //añadir objeto
-        axios.post(`http://localhost:3000/api/${this.ruta}/add`, objetoEditado)//añadir los objetos con los if
+        axios.post(`http://localhost:3000/api/${this.ruta}/add`, objetoEditado) //añadir los objetos con los if
           .then((response) => {
             console.log(response);
             this.list(this.ruta);

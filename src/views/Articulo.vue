@@ -1,5 +1,5 @@
 <template>
-    <table-data ruta ="articulo"></table-data>    
+    <table-data ruta ="articulo" ></table-data>    
 </template>
 
 <script>
